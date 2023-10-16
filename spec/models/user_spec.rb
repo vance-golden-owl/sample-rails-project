@@ -4,14 +4,14 @@ require 'rails_helper'
 
 RSpec.describe User, type: :model do
   describe 'validations' do
-    subject { User.new(name: 'Mr.A', email: 'mraemail@gmail.com', birthdate: 19.years.ago) }
+    subject { create(:user) }
     it { should validate_presence_of(:name) }
     it { should validate_presence_of(:email) }
     it { should validate_uniqueness_of(:email) }
     it { should validate_presence_of(:birthdate) }
 
     context 'when user is underage' do
-      let(:user) { User.new(name: 'Mr.A', email: 'mraemail@gmail.com', birthdate: 17.years.ago) }
+      let(:user) { build(:user, birthdate: 17.years.ago) }
 
       it 'he/she can not create account' do
         expect(user.valid?).to be false
