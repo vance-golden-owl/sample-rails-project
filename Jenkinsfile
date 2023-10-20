@@ -1,5 +1,10 @@
 pipeline {
   agent any
+
+  environment {
+    DOCKERHUB_CREDENTIALS = credentials('dockerhub')
+  }
+
   stages {
     stage("Verify tooling") {
       steps {
@@ -9,6 +14,12 @@ pipeline {
           docker compose version
           curl --version
         '''
+      }
+    }
+
+    stage ("Prune system") {
+      steps {
+        sh 'docker system prune -a -f'
       }
     }
 
@@ -26,11 +37,31 @@ pipeline {
         '''
       }
     }
+
+    stage("Build image for production environment") {
+      steps {
+        sh 'docker build -f Dockerfile.prod -t $DOCKERHUB_CREDENTIALS_USR/sample-web . --no-cache'
+      }
+    }
+
+    stage("Login Docker") {
+      steps {
+        sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+      }
+    }
+
+    stage("Push image") {
+      steps {
+        sh 'docker push $DOCKERHUB_CREDENTIALS_USR/sample-web'
+      }
+    }
+
   }
 
   post {
     always {
       sh 'docker compose -f docker-compose.test.yml down --remove-orphans -v'
+      sh 'docker logout'
     }
   }
 }
