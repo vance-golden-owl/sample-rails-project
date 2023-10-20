@@ -1,23 +1,8 @@
 pipeline {
   agent any
 
-  environment {
-    DOCKERHUB_CREDENTIALS = credentials('dockerhub')
-  }
-
   stages {
-    stage("Verify tooling") {
-      steps {
-        sh '''
-          docker version
-          docker info
-          docker compose version
-          curl --version
-        '''
-      }
-    }
-
-    stage ("Prune system") {
+    stage("Prune system") {
       steps {
         sh 'docker system prune -a -f'
       }
@@ -38,24 +23,30 @@ pipeline {
       }
     }
 
-    stage("Build image for production environment") {
-      steps {
-        sh 'docker build -f Dockerfile.prod -t $DOCKERHUB_CREDENTIALS_USR/sample-web . --no-cache'
+    stage("Deployment") {
+      when {
+        environment name: 'GIT_BRANCH', value: 'origin/main'
+      }
+
+      environment {
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub')
+      }
+
+      stages {
+        stage("Build image for production environment") {
+          steps {
+            sh 'docker build -f Dockerfile.prod -t $DOCKERHUB_CREDENTIALS_USR/sample-web . --no-cache'
+          }
+        }
+
+        stage("Push image to Dockerhub") {
+          steps {
+            sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+            sh 'docker push $DOCKERHUB_CREDENTIALS_USR/sample-web'
+          }
+        }
       }
     }
-
-    stage("Login Docker") {
-      steps {
-        sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
-      }
-    }
-
-    stage("Push image") {
-      steps {
-        sh 'docker push $DOCKERHUB_CREDENTIALS_USR/sample-web'
-      }
-    }
-
   }
 
   post {
