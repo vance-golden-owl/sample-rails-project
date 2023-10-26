@@ -2,11 +2,11 @@ pipeline {
   agent any
 
   stages {
-    stage("Prune system") {
-      steps {
-        sh 'docker system prune -a -f'
-      }
-    }
+    // stage("Prune system") {
+    //   steps {
+    //     sh 'docker system prune -a -f'
+    //   }
+    // }
 
     stage("Building") {
       steps {
@@ -25,7 +25,7 @@ pipeline {
 
     stage("Deployment") {
       when {
-        environment name: 'GIT_BRANCH', value: 'origin/main'
+        branch "main"
       }
 
       environment {
