@@ -2,12 +2,6 @@ pipeline {
   agent any
 
   stages {
-    // stage("Prune system") {
-    //   steps {
-    //     sh 'docker system prune -a -f'
-    //   }
-    // }
-
     stage("Building") {
       steps {
         sh 'docker compose -f docker-compose.test.yml up -d --build'

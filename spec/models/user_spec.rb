@@ -14,7 +14,7 @@ RSpec.describe User, type: :model do
       let(:user) { build(:user, birthdate: 17.years.ago) }
 
       it 'he/she can not create account' do
-        expect(user.valid?).to be true
+        expect(user.valid?).to be false
         expect(user.errors.full_messages).to include('Birthdate indicate user is under 18')
       end
     end
