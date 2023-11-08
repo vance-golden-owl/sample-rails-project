@@ -1,25 +1,32 @@
+void setBuildStatus(String message, String state) {
+  step([
+      $class: "GitHubCommitStatusSetter",
+      reposSource: [$class: "ManuallyEnteredRepositorySource", url: "https://github.com/vance-golden-owl/sample-rails-project.git"],
+      contextSource: [$class: "ManuallyEnteredCommitContextSource", context: "ci/jenkins/build-status"],
+      errorHandlers: [[$class: "ChangingBuildStatusErrorHandler", result: "UNSTABLE"]],
+      statusResultSource: [ $class: "ConditionalStatusResultSource", results: [[$class: "AnyBuildResult", message: message, state: state]] ]
+  ]);
+}
+
 pipeline {
   agent any
 
   stages {
-    // stage("Prune system") {
-    //   steps {
-    //     sh 'docker system prune -a -f'
-    //   }
-    // }
-
-    stage("Building") {
+    stage("Build") {
       steps {
         sh 'docker compose -f docker-compose.test.yml up -d --build'
       }
     }
 
-    stage("Run test") {
+    stage("Lint") {
       steps {
-        sh '''
-          docker exec sample-rails-project-web-1 bundle exec rubocop
-          docker exec sample-rails-project-web-1 bundle exec rspec
-        '''
+        sh 'docker exec sample-rails-project-web-1 bundle exec rubocop'
+      }
+    }
+
+    stage("Test") {
+      steps {
+        sh 'docker exec sample-rails-project-web-1 bundle exec rspec'
       }
     }
 
@@ -50,6 +57,14 @@ pipeline {
   }
 
   post {
+    success {
+        setBuildStatus("Build succeeded", "SUCCESS");
+    }
+
+    failure {
+        setBuildStatus("Build failed", "FAILURE");
+    }
+
     always {
       sh 'docker compose -f docker-compose.test.yml down --remove-orphans -v'
       sh 'docker logout'
