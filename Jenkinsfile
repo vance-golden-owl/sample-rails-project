@@ -14,6 +14,7 @@ pipeline {
   stages {
     stage("Build") {
       steps {
+        setBuildStatus("Build pending", "PENDING");
         sh 'docker compose -f docker-compose.test.yml up -d --build'
       }
     }
@@ -58,11 +59,11 @@ pipeline {
 
   post {
     success {
-        setBuildStatus("Build succeeded", "SUCCESS");
+      setBuildStatus("Build succeeded", "SUCCESS");
     }
 
     failure {
-        setBuildStatus("Build failed", "FAILURE");
+      setBuildStatus("Build failed", "FAILURE");
     }
 
     always {
