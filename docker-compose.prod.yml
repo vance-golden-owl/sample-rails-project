@@ -10,7 +10,7 @@ services:
       - POSTGRES_DB=sample_rails_project_production
 
   web:
-    image: sample-web
+    image: vancego/sample-web:latest
     command: "./bin/rails server"
     environment:
       - SAMPLE_RAILS_PROJECT_DATABASE_HOST=db
