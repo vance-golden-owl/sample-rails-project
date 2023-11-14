@@ -57,7 +57,10 @@ pipeline {
         stage("Run bash script") {
           steps {
             sshagent(credentials: ['010a2972-8913-47dd-8341-2b6ecd2d2b64']) {
-              sh "ssh -o StrictHostKeyChecking=no ec2-user@ec2-18-142-229-1.ap-southeast-1.compute.amazonaws.com 'bash sample-rails-project/deploy.sh'"
+              sh '''
+                ssh -o StrictHostKeyChecking=no ec2-user@ec2-18-142-229-1.ap-southeast-1.compute.amazonaws.com 'docker-compose -f sample-rails-project/docker-compose.yml pull'
+                ssh -o StrictHostKeyChecking=no ec2-user@ec2-18-142-229-1.ap-southeast-1.compute.amazonaws.com 'docker-compose -f sample-rails-project/docker-compose.yml up -d'
+              '''
             }
           }
         }
