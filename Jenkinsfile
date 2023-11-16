@@ -1,8 +1,8 @@
-void setBuildStatus(String message, String state) {
+void setBuildStatus(String context, String message, String state) {
   step([
       $class: "GitHubCommitStatusSetter",
       reposSource: [$class: "ManuallyEnteredRepositorySource", url: "https://github.com/vance-golden-owl/sample-rails-project.git"],
-      contextSource: [$class: "ManuallyEnteredCommitContextSource", context: "ci/jenkins/build-status"],
+      contextSource: [$class: "ManuallyEnteredCommitContextSource", context: context],
       errorHandlers: [[$class: "ChangingBuildStatusErrorHandler", result: "UNSTABLE"]],
       statusResultSource: [ $class: "ConditionalStatusResultSource", results: [[$class: "AnyBuildResult", message: message, state: state]] ]
   ]);
@@ -14,7 +14,6 @@ pipeline {
   stages {
     stage("Build") {
       steps {
-        setBuildStatus("Build pending", "PENDING");
         sh 'docker compose -f docker-compose.test.yml up -d --build'
       }
     }
@@ -23,11 +22,27 @@ pipeline {
       steps {
         sh 'docker exec sample-rails-project-web-1 bundle exec rubocop'
       }
+      post {
+        success {
+          setBuildStatus("Rubocop", "Lint passed", "SUCCESS");
+        }
+        failure {
+          setBuildStatus("Rubocop", "Lint failed", "FAILURE");
+        }
+      }
     }
 
     stage("Test") {
       steps {
         sh 'docker exec sample-rails-project-web-1 bundle exec rspec'
+      }
+      post {
+        success {
+          setBuildStatus("Rspec", "Test passed", "SUCCESS");
+        }
+        failure {
+          setBuildStatus("Rspec", "Test failed", "FAILURE");
+        }
       }
     }
 
@@ -58,8 +73,8 @@ pipeline {
           steps {
             sshagent(credentials: ['010a2972-8913-47dd-8341-2b6ecd2d2b64']) {
               sh '''
-                ssh -o StrictHostKeyChecking=no ec2-user@ec2-18-142-229-1.ap-southeast-1.compute.amazonaws.com 'docker-compose -f sample-rails-project/docker-compose.yml pull'
-                ssh -o StrictHostKeyChecking=no ec2-user@ec2-18-142-229-1.ap-southeast-1.compute.amazonaws.com 'docker-compose -f sample-rails-project/docker-compose.yml up -d'
+                ssh -o StrictHostKeyChecking=no ec2-user@ec2-54-251-22-105.ap-southeast-1.compute.amazonaws.com 'docker-compose -f sample-rails-project/docker-compose.yml pull'
+                ssh -o StrictHostKeyChecking=no ec2-user@ec2-54-251-22-105.ap-southeast-1.compute.amazonaws.com 'docker-compose -f sample-rails-project/docker-compose.yml up -d'
               '''
             }
           }
@@ -69,14 +84,6 @@ pipeline {
   }
 
   post {
-    success {
-      setBuildStatus("Build succeeded", "SUCCESS");
-    }
-
-    failure {
-      setBuildStatus("Build failed", "FAILURE");
-    }
-
     always {
       sh 'docker compose -f docker-compose.test.yml down --remove-orphans -v'
       sh 'docker logout'
